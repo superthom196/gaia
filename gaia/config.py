@@ -6,6 +6,8 @@ from pathlib import Path
 
 # What each quality level renders on the box for the TV stream. Browsers
 # always render the full page themselves; these only shape the streams.
+# Lite boxes (thin clients) don't stream at all: they serve the web page and
+# nothing else, and Nexiom gives their TVs no app.
 QUALITY = {
     "lite": {
         "width": 1280,
@@ -53,7 +55,7 @@ class Settings:
     data: Path
     quality: str
     quality_source: str  # "auto" or "set"
-    stream: bool  # run the TV renderer (headless Chromium)
+    stream: bool  # stream to TVs (headless Chromium); never at the Lite level
     port: int
 
     @property
@@ -71,6 +73,7 @@ def load() -> Settings:
         data=Path(os.environ.get("GAIA_DATA", "/data")),
         quality=quality,
         quality_source=source,
-        stream=os.environ.get("GAIA_STREAM", "1") not in ("0", "false", "no", "off"),
+        stream=quality != "lite"
+        and os.environ.get("GAIA_STREAM", "1") not in ("0", "false", "no", "off"),
         port=int(os.environ.get("GAIA_PORT", "8040")),
     )

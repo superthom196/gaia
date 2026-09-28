@@ -100,7 +100,10 @@ def create_app(settings: config.Settings | None = None, *, start_feeds: bool = T
             "version": __version__,
             "quality": settings.quality,
             "quality_source": settings.quality_source,
-            "stream": streams.report() if streams else None,
+            # Whether this box streams to TVs: Nexiom reads it to decide
+            # whether TVs get the app.
+            "stream": bool(streams and streams.available),
+            "streams": streams.report() if streams else None,
             "feeds": scheduler.report(),
         }
 

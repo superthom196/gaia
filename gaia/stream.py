@@ -280,6 +280,11 @@ class Streams:
                 json.dumps({"type": "viewers", "count": len(session.viewers)})
             )
 
+    @property
+    def available(self) -> bool:
+        """Streaming can run: Playwright is up and Chromium didn't fail."""
+        return self._pw is not None and self.error is None
+
     def report(self) -> dict:
         return {
             "running": self._browser is not None,

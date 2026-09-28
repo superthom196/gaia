@@ -13,11 +13,12 @@ brief below records the choices made with Thom that day.
 - **Our own code, not a fork.** [JhonRiv21/Radar](https://github.com/JhonRiv21/Radar)
   is the look and feel to beat, but it has no licence, so none of its code is
   copied. We use the same public feeds.
-- **Its own repo** (`~/Developer/Gaia`, later `superthom196/gaia`), like CRATE
-  and Cinematica. Nexiom only pulls the image.
+- **Its own repo**, public at [superthom196/gaia](https://github.com/superthom196/gaia),
+  like CRATE and Cinematica. Nexiom only pulls the image and the TV APK.
 - **Name:** Gaia. Image `ghcr.io/superthom196/gaia`, web address `gaia.<domain>`.
 - **Main view:** a 3D globe with layers you switch on and off.
-- **In Nexiom:** a base service (on every box), `pillar = "home"`.
+- **In Nexiom (decided 2026-09-28):** an **add-on**, not a base service, with
+  **no pillar** (its tile goes under More). Only boxes Thom picks get it.
 - **TV:** a TV app (the remote spins the globe and steps through events) that
   is also the TV's screensaver.
 - **Web and TV are built together**, not the TV afterwards.
@@ -38,10 +39,15 @@ What the first build delivers, settled in one round of questions.
   - One **shared ambient stream** for every TV in screensaver mode. A TV gets
     **its own interactive stream** when someone presses a button, and drops
     back to the shared one when idle.
+  - **Only while a TV watches.** No Chromium runs until a TV connects; the
+    renderers stop a minute after the last TV leaves, Chromium two minutes
+    after that. (Measured on nexiom0: nothing watching costs no Chromium and
+    about 140 MB; the screensaver stream is up about 4 s after a TV connects.)
   - **Quality levels, picked automatically** from the box's hardware, with an
-    admin override: **Lite** (720p, no wind particles, static clouds, no
-    night lights: for thin clients like a T630), **Standard** (1080p30),
-    **High** (1080p60).
+    admin override: **Lite** (thin clients like a T630: **no TV streaming at
+    all**, only the web page, no Chromium; clouds refresh hourly),
+    **Standard** (1080p30, GPU and 4+ cores), **High** (1080p60, GPU and 8+
+    cores).
 - **Browsers render the globe themselves.** Only TVs are streamed. The
   renderer on the box is the same page in headless Chromium, so there's one
   code base.
@@ -69,11 +75,43 @@ What the first build delivers, settled in one round of questions.
 - **Remote:** as in "TV app" below. **Screensaver:** slow spin, and every
   ~60 s it flies to a recent event and shows its card for 15–20 s.
 - **Phones:** later.
-- **Repo:** a local git repo plus a **private GitHub repo**
-  `superthom196/gaia`, with commits as the work goes.
+- **Repo:** `superthom196/gaia`, **public**, as are its ghcr package and the
+  TV APK on each release (Nexiom downloads them without logging in).
 - **Testing:** deploy straight to **nexiom0** (Ryzen 3 2200GE, Vega iGPU,
   `/dev/dri/renderD128`) as its own compose project, `/opt/gaia`, on
-  `127.0.0.1:8040`, outside Nexiom releases until phase 7.
+  port 8040 open on the LAN, outside Nexiom releases until phase 7.
+
+## Interface for Nexiom
+
+What Nexiom relies on. Changing any of it is a breaking change.
+
+- **Image:** `ghcr.io/superthom196/gaia:vX.Y.Z`, built for each `vX.Y.Z` tag.
+  Nexiom pins exact tags and never pulls `:latest`.
+- **Compose needs:** `network_mode: host` (WebRTC to TVs), `init: true`,
+  `shm_size: 1gb`, and `/dev/dri` passed through when the box has it (leave
+  it out on a box without, which then runs at Lite). See `deploy/compose.yaml`.
+- **Environment:**
+  - `GAIA_HOST`: the address to listen on (default `127.0.0.1`).
+  - `GAIA_PORT`: default `8040`.
+  - `GAIA_QUALITY`: `auto` (default), `lite`, `standard` or `high`.
+  - `GAIA_STREAM`: `1` (default) or `0` to switch TV streaming off.
+    Streaming is always off at Lite.
+  - `TZ`: the box's time zone, for the times the TV stream shows.
+- **Data:** everything under `/data` (snapshots, textures, `status.json`).
+  Rebuildable: losing it only means refetching.
+- **Health:** `GET /health` returns `{"ok": true}`.
+- **Status:** `GET /api/status` returns `version`, `quality`
+  (`lite|standard|high`), `quality_source` (`auto|set`), **`stream`
+  (true/false: whether this box streams to TVs; Nexiom gives TVs the app
+  only when true)**, `streams` (sessions and viewers, or null), and `feeds`
+  (each with `name`, `source`, `ok`, `age`, `error`).
+- **TV page:** `http://gaia.nexiom.home/tv`, the app's built-in default. Set
+  another with `am start -n io.github.superthom196.gaia/.MainActivity -e url
+  <url>`; the app keeps it.
+- **TV app:** package `io.github.superthom196.gaia`, released as
+  `Gaia-TV-<version>.apk` on each GitHub release. versionCode is
+  x·10000 + y·100 + z, so it always rises.
+- **Screensaver component:** `io.github.superthom196.gaia/.GaiaDream`.
 
 ## How it works
 
@@ -166,33 +204,35 @@ Show a credit line with every source on the page.
 
 ## Streaming to the TV
 
-- **Renderer:** headless Chromium in the Gaia container (with `/dev/dri`
-  passed through for the GPU) loads `/?tv=1&render=<session>`. The page sends
-  its own canvas as WebRTC video (`canvas.captureStream()`), so there's no
-  separate encoder pipeline. It uses hardware encoding (VAAPI) when Chromium
-  can, and software otherwise.
+- **Renderer:** Debian's Chromium in the Gaia container, driven by
+  Playwright, headless, drawing on the GPU through `/dev/dri` (checked on
+  nexiom0: "AMD Radeon Vega 8" through ANGLE). It loads
+  `/?tv=1&render=<session>`, and the page sends its own tab
+  (`getDisplayMedia` with `preferCurrentTab`) as WebRTC video, so there's no
+  separate encoder pipeline.
 - **Signalling:** a WebSocket on Gaia's backend (`/api/rtc`) pairs a TV
   player with a renderer session.
-- **Sessions:** one long-lived **ambient** renderer (screensaver mode) that
-  every idle TV watches. A key press asks for an **interactive** renderer of
-  its own, started on demand and stopped after a few minutes idle. The number
-  running at once is capped by quality level.
+- **Sessions:** one **ambient** renderer (screensaver mode) that every idle
+  TV watches. A key press asks for an **interactive** renderer of its own. The
+  TV player drops back to ambient after 5 minutes without a key. Each session
+  starts when its first TV joins and stops 60 s after its last TV leaves.
+  Interactive sessions are capped by quality level (Standard 2, High 3).
 - **Remote keys** travel over the WebRTC data channel to the renderer page,
   which handles them exactly as a browser in TV mode would.
-- **Quality:** chosen at startup from the hardware (render device, encoder,
-  cores), with an override (`GAIA_QUALITY=lite|standard|high`). Shown in
+- **Quality:** chosen at startup from the hardware (render device, cores),
+  with an override (`GAIA_QUALITY=lite|standard|high`). Shown in
   `/api/status`.
 
 ## Nexiom side (done later, in the NEXIOM Server repo)
 
 - **Architecture doc first:** update `docs/architecture.md` before anything
   else.
-- **The service:** `services/gaia/` with `service.toml` (`kind = "compose"`,
-  `base = true`, `pillar = "home"`, `port = 8040`, `subdomain = "gaia"`) and
-  `compose.yaml`. The image is pinned per release, the port bound to
-  `127.0.0.1:8040`, and `/data` in `${NEXIOM_DATA}`.
-- **The TV app entry:** `tvapps/gaia-tv.toml` with **no pillar**, so it goes
-  on every TV (like Projectivy).
+- **The service:** `services/gaia/`, an **add-on** with **no pillar** (tile
+  under More), on the boxes Thom picks: `kind = "compose"`, `port = 8040`,
+  `subdomain = "gaia"`, and `compose.yaml` per "Interface for Nexiom" above.
+  The image is pinned per release, and `/data` in `${NEXIOM_DATA}`.
+- **The TV app entry:** `tvapps/gaia-tv.toml`, installed only where Gaia
+  runs and `/api/status` says `"stream": true`.
 - **Screensaver:** `setup-tv.sh` sets it after installing the app. This
   must be idempotent.
 - **`status.sh`:** reads `/api/status`.

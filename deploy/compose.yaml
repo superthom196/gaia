@@ -5,11 +5,11 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-      # Build on the host's network: on nexiom0, large downloads over
-      # Docker's bridge arrive corrupted (MTU on the VPN path).
-      network: host
     image: ghcr.io/superthom196/gaia:${GAIA_TAG:-latest}
     container_name: gaia
+    # Reaps Chromium's child processes once it quits (it starts and stops
+    # with the TVs watching).
+    init: true
     # Host networking, so the TV streams' WebRTC traffic (UDP, ports chosen
     # per call) reaches TVs on the LAN directly. GAIA_HOST decides who can
     # reach the web page: 127.0.0.1 behind Caddy, 0.0.0.0 open on the LAN.

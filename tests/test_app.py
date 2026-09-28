@@ -37,6 +37,7 @@ def test_status_lists_every_feed(client):
     store.write_json("status.json", {})
     body = client.get("/api/status").json()
     assert body["quality"] == "lite"
+    assert body["stream"] is False
     names = {f["name"] for f in body["feeds"]}
     assert {"quakes", "eonet", "gdacs", "clouds", "weather"} <= names
     assert all(f["ok"] is False for f in body["feeds"])
@@ -52,5 +53,15 @@ def test_status_marks_fresh_feeds_ok(client):
 def test_quality_detection_respects_override(monkeypatch):
     monkeypatch.setenv("GAIA_QUALITY", "high")
     assert config.load().quality == "high"
+    assert config.load().stream is True
+
+
+def test_lite_never_streams(monkeypatch):
+    monkeypatch.setenv("GAIA_QUALITY", "lite")
+    monkeypatch.setenv("GAIA_STREAM", "1")
+    assert config.load().stream is False
+    monkeypatch.setenv("GAIA_QUALITY", "standard")
+    monkeypatch.setenv("GAIA_STREAM", "0")
+    assert config.load().stream is False
     monkeypatch.setenv("GAIA_QUALITY", "auto")
     assert config.load().quality_source == "auto"
