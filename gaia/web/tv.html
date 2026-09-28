@@ -6,7 +6,11 @@
 <title>Gaia TV</title>
 <style>
   html, body { margin: 0; height: 100%; background: #0d0f11; overflow: hidden; }
-  video { width: 100%; height: 100%; object-fit: contain; display: block; background: #0d0f11; }
+  /* Two videos: the next stream plays underneath until its first frame is
+     up, then swaps in, so the TV never shows an empty player. */
+  video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: transparent; opacity: 0; }
+  video.on { opacity: 1; }
+  video::-webkit-media-controls, video::-webkit-media-controls-overlay-play-button { display: none !important; }
   #note {
     position: fixed; left: 50%; bottom: 8%; transform: translateX(-50%);
     font: 500 22px/1.4 system-ui, sans-serif; color: #a0a6ab; letter-spacing: 0.02em;
@@ -16,7 +20,6 @@
 </style>
 </head>
 <body>
-<video id="video" autoplay muted playsinline></video>
 <div id="note">Connecting to Gaia…</div>
 <script type="module" src="/static/js/player.js"></script>
 </body>

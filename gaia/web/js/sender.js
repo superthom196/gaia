@@ -45,6 +45,15 @@ export async function start(session, tier) {
       const pc = new RTCPeerConnection({ iceServers: [] });
       peers.set(msg.viewer, pc);
       const sender = pc.addTrack(track, stream);
+      // H.264 first. Chromium's VP8 encoder manages only about 7 fps at 1080p
+      // on a thin client's CPU, OpenH264 about 28; and TVs decode H.264 in
+      // hardware. (The box's GPU encoder isn't reachable from headless
+      // Chromium, so this is software either way.)
+      const codecs = RTCRtpSender.getCapabilities("video")?.codecs || [];
+      const h264 = codecs.filter((c) => c.mimeType === "video/H264");
+      if (h264.length) {
+        pc.getTransceivers()[0].setCodecPreferences([...h264, ...codecs.filter((c) => c.mimeType !== "video/H264")]);
+      }
       const channel = pc.createDataChannel("keys");
       channel.onmessage = (m) => {
         const { key: pressed } = JSON.parse(m.data);
@@ -57,7 +66,8 @@ export async function start(session, tier) {
       await pc.setLocalDescription(await pc.createOffer());
       await gathered(pc);
       const params = sender.getParameters();
-      params.degradationPreference = "maintain-resolution";
+      // A spinning globe looks worse stuttering than slightly soft.
+      params.degradationPreference = "maintain-framerate";
       params.encodings = [{ maxBitrate: BITRATE[tier.width] || 6_000_000, maxFramerate: fps }];
       await sender.setParameters(params).catch(() => {});
       send({ type: "offer", viewer: msg.viewer, sdp: pc.localDescription.sdp });

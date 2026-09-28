@@ -57,7 +57,6 @@ def chromium_args() -> list[str]:
             "--enable-gpu-rasterization",
             "--use-gl=angle",
             "--use-angle=gl-egl",
-            "--enable-features=VaapiVideoEncoder,VaapiVideoDecoder",
         ]
     else:
         args += ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]

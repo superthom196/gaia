@@ -131,5 +131,14 @@ def create_app(settings: config.Settings | None = None, *, start_feeds: bool = T
     def favicon():
         return Response(status_code=204)
 
+    @app.middleware("http")
+    async def revalidate_static(request, call_next):
+        # TVs and browsers must pick up a new page after an update: they may
+        # keep a copy, but ask first (a 304 when nothing changed).
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
     app.mount("/static", StaticFiles(directory=WEB), name="static")
     return app
