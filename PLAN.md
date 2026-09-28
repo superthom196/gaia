@@ -53,9 +53,11 @@ What the first build delivers, settled in one round of questions.
   code base.
 - **Engine:** my call, since the TV only shows video. Start with MapLibre GL
   v5 globe, and fall back to globe.gl/three.js if wind particles fail.
-- **Look:** scientific instrument, **dark and neutral**: a graphite
-  background, off-white hairlines and graticule, monospaced numbers, colour
-  only on event markers.
+- **Look:** a **bright, natural-colour globe** (green land, blue sea, a
+  little punchier than NASA's Blue Marble) on a graphite background,
+  off-white hairlines and graticule, monospaced numbers. Day and night is
+  off by default, and clouds are light, showing only real cloud, not haze.
+  (Thom found the first, muted look too dark and murky.)
 - **Desktop layout:** the globe fills the screen, with floating collapsible
   panels (layers on the left, latest events and sea ice on the right,
   credits and feed status along the bottom). The **event card opens next to

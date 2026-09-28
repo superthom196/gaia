@@ -39,7 +39,7 @@ const LAYERS = {
     { id: "graticule", label: "Grid", swatch: "repeating-linear-gradient(90deg,#555 0 1px,transparent 1px 5px)" },
   ],
 };
-const DEFAULT_ON = new Set(["quake", "volcano", "storm", "fire", "flood", "clouds", "wind", "night", "graticule"]);
+const DEFAULT_ON = new Set(["quake", "volcano", "storm", "fire", "flood", "clouds", "wind", "graticule"]);
 
 // Browsers remember their layers; the TV and the renderer always start fresh.
 const saved = !TV && !RENDER ? JSON.parse(localStorage.getItem("gaia.layers") || "null") : null;

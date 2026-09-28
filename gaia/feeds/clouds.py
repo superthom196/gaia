@@ -39,8 +39,9 @@ def cover(rgba: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     alpha = rgba[..., 3].astype(np.float32) / 255
     grey = (np.abs(r - g) < 8) & (np.abs(g - b) < 8)
     # On the grey part of the table, lighter is colder: clear ocean sits near
-    # 90-110, mid cloud near 200. Everything coloured is colder still.
-    t = np.clip((r - 112) / (200 - 112), 0, 1)
+    # 90-110, mid cloud near 200. Everything coloured is colder still. Warm,
+    # thin cloud below 140 counts as clear, so haze doesn't grey the map.
+    t = np.clip((r - 140) / (200 - 140), 0, 1)
     t = t * t * (3 - 2 * t)
     return np.where(grey, t * 0.92, 0.97) * alpha, alpha
 

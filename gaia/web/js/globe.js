@@ -42,7 +42,7 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
       projection: { type: "globe" },
       sky: {
         "sky-color": "#0d0f11",
-        "horizon-color": "#1c2a38",
+        "horizon-color": "#3d6f9c",
         "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 0.55, 5, 0.25, 7, 0],
       },
       sources: {
@@ -65,10 +65,10 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
         { id: "space", type: "background", paint: { "background-color": "#0d0f11" } },
         {
           id: "base", type: "raster", source: "base",
-          // Muted, so the events carry the colour.
-          paint: { "raster-saturation": -0.55, "raster-brightness-max": 0.78, "raster-contrast": 0.08, "raster-fade-duration": 0 },
+          // Natural colour, a little punchier than NASA's: green land, blue sea.
+          paint: { "raster-saturation": 0.25, "raster-contrast": 0.1, "raster-brightness-min": 0.1, "raster-fade-duration": 0 },
         },
-        { id: "clouds", type: "raster", source: "clouds", paint: { "raster-opacity": 0.85, "raster-fade-duration": 0 } },
+        { id: "clouds", type: "raster", source: "clouds", paint: { "raster-opacity": 0.6, "raster-fade-duration": 0 } },
         { id: "night", type: "raster", source: "night", paint: { "raster-opacity": 1, "raster-fade-duration": 0 } },
         { id: "temp", type: "raster", source: "temp", layout: { visibility: "none" }, paint: { "raster-opacity": 0.75, "raster-fade-duration": 0 } },
         { id: "rain", type: "raster", source: "rain", layout: { visibility: "none" }, paint: { "raster-opacity": 0.9, "raster-fade-duration": 0 } },
