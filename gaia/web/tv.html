@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia TV</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0f11; overflow: hidden; }
+  video { width: 100%; height: 100%; object-fit: contain; display: block; background: #0d0f11; }
+  #note {
+    position: fixed; left: 50%; bottom: 8%; transform: translateX(-50%);
+    font: 500 22px/1.4 system-ui, sans-serif; color: #a0a6ab; letter-spacing: 0.02em;
+    transition: opacity 0.4s;
+  }
+  #note:empty { opacity: 0; }
+</style>
+</head>
+<body>
+<video id="video" autoplay muted playsinline></video>
+<div id="note">Connecting to Gaia…</div>
+<script type="module" src="/static/js/player.js"></script>
+</body>
+</html>

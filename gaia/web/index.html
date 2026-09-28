@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia</title>
+<meta name="description" content="A live globe of the natural world: earthquakes, volcanoes, storms, fires, floods, sea ice, wind and weather.">
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<link rel="stylesheet" href="/static/css/gaia.css">
+</head>
+<body>
+<div id="map" aria-label="Globe"></div>
+
+<header class="brand">
+  <span class="brand-name">Gaia</span>
+  <span class="brand-live"><span class="dot" id="live-dot"></span><span id="clock">--:--</span></span>
+</header>
+
+<aside id="layers" class="panel" aria-label="Layers">
+  <div class="panel-head">
+    <h2>Layers</h2>
+    <button class="icon-btn" id="layers-toggle" aria-expanded="true" aria-controls="layers-body" aria-label="Collapse layers">
+      <svg width="14" height="14" aria-hidden="true"><path d="M3 5l4 4 4-4" /></svg>
+    </button>
+  </div>
+  <div id="layers-body" class="panel-body">
+    <div class="group-label">Events</div>
+    <div id="event-layers"></div>
+    <div class="filter" role="group" aria-label="Earthquakes shown">
+      <label>Quakes
+        <select id="quake-mag">
+          <option value="4.5">M4.5+</option>
+          <option value="2.5">M2.5+</option>
+          <option value="6">M6+</option>
+        </select>
+      </label>
+      <label>over
+        <select id="quake-window">
+          <option value="24">past day</option>
+          <option value="168">past week</option>
+        </select>
+      </label>
+    </div>
+    <div class="group-label">Ice</div>
+    <div id="ice-layers"></div>
+    <div class="group-label">Weather</div>
+    <div id="weather-layers"></div>
+    <div class="rule"></div>
+    <div id="sky-layers"></div>
+  </div>
+</aside>
+
+<aside id="latest" class="panel" aria-label="Latest events">
+  <div class="panel-head">
+    <h2>Latest</h2>
+    <span class="meta" id="latest-count"></span>
+  </div>
+  <ol id="latest-list" class="event-list"></ol>
+  <section id="ice" class="ice" aria-label="Sea ice extent">
+    <div class="ice-head">
+      <h3>Sea ice extent</h3>
+      <div class="seg" role="group" aria-label="Hemisphere">
+        <button aria-pressed="true" data-hemi="north">Arctic</button>
+        <button aria-pressed="false" data-hemi="south">Antarctic</button>
+      </div>
+    </div>
+    <div class="ice-figure">
+      <span class="ice-value" id="ice-value">–</span>
+      <span class="meta" id="ice-date"></span>
+      <span class="ice-diff" id="ice-diff"></span>
+    </div>
+    <svg id="ice-chart" class="ice-chart" viewBox="0 0 300 80" preserveAspectRatio="none" role="img"></svg>
+    <div class="ice-legend meta"><span class="swatch line"></span>2026 <span class="swatch dash"></span>1981–2010 median <span class="swatch band"></span>10th–90th</div>
+  </section>
+</aside>
+
+<article id="card" class="card" hidden aria-live="polite"></article>
+
+<div class="controls" role="group" aria-label="Globe controls">
+  <button class="icon-btn big" id="zoom-in" aria-label="Zoom in"><svg width="16" height="16" aria-hidden="true"><path d="M8 2v12M2 8h12" /></svg></button>
+  <button class="icon-btn big" id="zoom-out" aria-label="Zoom out"><svg width="16" height="16" aria-hidden="true"><path d="M2 8h12" /></svg></button>
+  <button class="icon-btn big" id="spin" aria-pressed="true" aria-label="Spin the globe"><svg width="16" height="16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-2-4M11 1v3h3" /></svg></button>
+</div>
+
+<footer class="footer">
+  <span class="credits">Data:
+    <a href="https://earthquake.usgs.gov/">USGS Earthquake Hazards</a> ·
+    <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a> ·
+    <a href="https://www.gdacs.org/">GDACS</a> ·
+    <a href="https://volcano.si.edu/">Smithsonian GVP</a> ·
+    <a href="https://volcanoes.usgs.gov/hans-public/">USGS HANS</a> ·
+    <a href="https://nsidc.org/data/g02135">NSIDC Sea Ice Index</a> ·
+    <a href="https://www.earthdata.nasa.gov/gibs">NASA GIBS</a> (Blue Marble, Black Marble, GOES and Himawari infrared) ·
+    <a href="https://www.nco.ncep.noaa.gov/pmb/products/gfs/">NOAA GFS</a> ·
+    Globe: <a href="https://maplibre.org/">MapLibre</a>
+  </span>
+  <button class="status" id="status" aria-expanded="false" aria-controls="status-list"><span class="dot"></span><span id="status-text">Checking feeds</span></button>
+  <div id="status-list" class="panel status-list" hidden></div>
+</footer>
+
+<div id="tv-hints" class="tv-hints" hidden>
+  <span><kbd>OK</kbd>Next event</span>
+  <span><kbd>◀ ▶</kbd>Spin</span>
+  <span><kbd>▲ ▼</kbd>Zoom</span>
+  <span><kbd>☰</kbd>Layers</span>
+  <span><kbd>↩</kbd>Slow spin</span>
+</div>
+
+<script src="/static/vendor/maplibre-gl.js"></script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

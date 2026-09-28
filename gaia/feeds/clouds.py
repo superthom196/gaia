@@ -46,14 +46,17 @@ def cover(rgba: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def composite(images: list[tuple[np.ndarray, float]]) -> np.ndarray:
-    lon = (np.arange(WIDTH) + 0.5) / WIDTH * 360 - 180
+    lon = np.radians((np.arange(WIDTH) + 0.5) / WIDTH * 360 - 180)[None, :]
+    lat = np.radians(90 - (np.arange(HEIGHT) + 0.5) / HEIGHT * 180)[:, None]
     num = np.zeros((HEIGHT, WIDTH), np.float32)
     den = np.zeros((HEIGHT, WIDTH), np.float32)
     for rgba, sub_lon in images:
         c, mask = cover(rgba)
-        # Feather each disc towards its edge so the seams don't show.
-        dist = np.abs((lon - sub_lon + 180) % 360 - 180)
-        w = np.clip((78 - dist) / 20, 0, 1)[None, :] * mask
+        # Feather each disc towards its edge, where the satellite looks at
+        # the Earth side-on and the picture smears, so the seams don't show.
+        cos_d = np.cos(lat) * np.cos(lon - np.radians(sub_lon))
+        dist = np.degrees(np.arccos(np.clip(cos_d, -1, 1)))
+        w = np.clip((72 - dist) / 14, 0, 1) * mask
         num += c / np.maximum(mask, 1e-6) * w
         den += w
     return np.where(den > 0, num / np.maximum(den, 1e-6), 0)
