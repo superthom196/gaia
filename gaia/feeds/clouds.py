@@ -57,6 +57,8 @@ def composite(images: list[tuple[np.ndarray, float]]) -> np.ndarray:
         cos_d = np.cos(lat) * np.cos(lon - np.radians(sub_lon))
         dist = np.degrees(np.arccos(np.clip(cos_d, -1, 1)))
         w = np.clip((72 - dist) / 14, 0, 1) * mask
+        # GIBS cuts the discs off square near the poles; fade out before that.
+        w *= np.clip((78 - np.abs(np.degrees(lat))) / 12, 0, 1)
         num += c / np.maximum(mask, 1e-6) * w
         den += w
     return np.where(den > 0, num / np.maximum(den, 1e-6), 0)

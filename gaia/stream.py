@@ -93,10 +93,13 @@ class Streams:
             from playwright.async_api import async_playwright
 
             self._pw = await async_playwright().start()
-            # "chromium" is the full browser in new headless mode, which can
-            # capture a tab; Playwright's default headless shell can't.
+            # A full Chromium in new headless mode can capture a tab;
+            # Playwright's default headless shell can't. The image uses
+            # Debian's (GAIA_CHROMIUM); elsewhere Playwright's own.
+            path = os.environ.get("GAIA_CHROMIUM")
+            options = {"executable_path": path} if path else {"channel": "chromium"}
             self._browser = await self._pw.chromium.launch(
-                channel="chromium", headless=True, args=chromium_args()
+                headless=True, args=chromium_args(), **options
             )
         except Exception as exc:  # the web page keeps working without streams
             self.error = f"{type(exc).__name__}: {exc}"[:300]
@@ -128,7 +131,7 @@ class Streams:
         )
         session.page = page
         page.on("crash", lambda *_: asyncio.create_task(self._close(session)))
-        page.on("console", lambda m: log.info("%s console %s: %s", name, m.type, m.text))
+        page.on("console", lambda m: self._console(name, m))
         page.on("pageerror", lambda e: log.warning("%s page error: %s", name, e))
         await page.goto(url)
         await page.wait_for_selector("body[data-ready]", timeout=START_TIMEOUT * 1000)
@@ -136,6 +139,12 @@ class Streams:
         await page.keyboard.press("Shift")
         log.info("renderer %s opened", name)
         return session
+
+    @staticmethod
+    def _console(name: str, message) -> None:
+        # SwiftShader and ANGLE chatter about buffer readback; skip it.
+        if message.type in ("error", "warning") and "performance warning" not in message.text:
+            log.info("%s console %s: %s", name, message.type, message.text)
 
     async def _close(self, session: Session) -> None:
         self.sessions.pop(session.name, None)

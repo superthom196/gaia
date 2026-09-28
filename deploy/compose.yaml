@@ -1,0 +1,31 @@
+name: gaia
+
+services:
+  gaia:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # Build on the host's network: on nexiom0, large downloads over
+      # Docker's bridge arrive corrupted (MTU on the VPN path).
+      network: host
+    image: ghcr.io/superthom196/gaia:${GAIA_TAG:-latest}
+    container_name: gaia
+    # Host networking, so the TV streams' WebRTC traffic (UDP, ports chosen
+    # per call) reaches TVs on the LAN directly. GAIA_HOST decides who can
+    # reach the web page: 127.0.0.1 behind Caddy, 0.0.0.0 open on the LAN.
+    network_mode: host
+    environment:
+      GAIA_HOST: ${GAIA_HOST:-127.0.0.1}
+      GAIA_PORT: ${GAIA_PORT:-8040}
+      GAIA_QUALITY: ${GAIA_QUALITY:-auto}
+      GAIA_STREAM: ${GAIA_STREAM:-1}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ${GAIA_DATA_DIR:-./data}:/data
+    # The GPU for the TV renderer. Remove on a box without /dev/dri, which
+    # then runs at the Lite level on the CPU.
+    devices:
+      - /dev/dri:/dev/dri
+    # Chromium needs more shared memory than Docker's default 64 MB.
+    shm_size: 1gb
+    restart: unless-stopped

@@ -30,7 +30,8 @@ async function body(p, coordinates) {
   const { title, sub } = describe(p);
   let heading = title, place = sub, stats = "", extra = "", chips = "";
 
-  if (p.severity && p.kind !== "volcano") chips += `<span class="chip ${p.severity}">${escape(p.severity)} alert</span>`;
+  // Green is "nothing unusual": only the higher alert levels earn a chip.
+  if (p.severity && p.severity !== "green" && p.kind !== "volcano") chips += `<span class="chip ${p.severity}">${escape(p.severity)} alert</span>`;
   switch (p.kind) {
     case "quake":
       heading = `M${p.magnitude.toFixed(1)} earthquake`;
@@ -39,7 +40,6 @@ async function body(p, coordinates) {
         + stat("Depth", p.depth_km != null ? `${num(p.depth_km)} km` : "–")
         + stat("Time", escape(dateTime(p.started)));
       if (p.count > 1) extra = `<p class="report">One of ${p.count} quakes within 120 km of each other since ${escape(dateTime(p.first))}. The largest is shown.</p>`;
-      if (p.tsunami) chips += `<span class="chip orange">Tsunami message</span>`;
       if (p.felt) chips += `<span class="chip">Felt by ${num(p.felt)}</span>`;
       break;
     case "storm":

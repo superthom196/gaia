@@ -40,7 +40,10 @@ class Scheduler:
 
     async def start(self) -> None:
         self._client = httpx.AsyncClient(
-            headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=60
+            headers={"User-Agent": USER_AGENT},
+            follow_redirects=True,
+            timeout=60,
+            transport=httpx.AsyncHTTPTransport(retries=3),
         )
         for feed in self.feeds:
             self._tasks.append(asyncio.create_task(self._loop(feed), name=f"feed:{feed.name}"))
@@ -58,9 +61,14 @@ class Scheduler:
         last = self.status.get(feed.name, {}).get("last_success")
         if last:
             await asyncio.sleep(max(0.0, last + feed.interval - time.time()))
+        failures = 0
         while True:
-            await self.run_once(feed)
-            await asyncio.sleep(feed.interval)
+            ok = await self.run_once(feed)
+            failures = 0 if ok else failures + 1
+            # Downloads on some boxes drop now and then: after a failure, try
+            # again in a minute, backing off, and never later than usual.
+            wait = feed.interval if ok else min(feed.interval, 60 * 2 ** (failures - 1))
+            await asyncio.sleep(wait)
 
     async def run_once(self, feed: Feed) -> bool:
         assert self._client is not None

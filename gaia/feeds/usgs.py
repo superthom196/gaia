@@ -38,7 +38,6 @@ def normalise(geojson: dict) -> list[dict]:
                 updated=from_ms(p.get("updated") or p["time"]),
                 link=p.get("url"),
                 depth_km=None if depth is None else round(depth, 1),
-                tsunami=bool(p.get("tsunami")),
                 felt=p.get("felt"),
             )
         )

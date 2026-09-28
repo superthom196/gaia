@@ -1,0 +1,39 @@
+# Publishes the Gaia image to ghcr.io/superthom196/gaia for each vX.Y.Z tag,
+# as :vX.Y.Z and :latest. Nexiom boxes pull :latest when Gaia is installed or
+# updated, so pushing a tag is what releases Gaia to them.
+#
+# The first push creates the package as private: set its visibility to public
+# once in the package settings on GitHub, or boxes can't pull it.
+name: image
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/superthom196/gaia:${{ github.ref_name }}
+            ghcr.io/superthom196/gaia:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/superthom196/gaia
+            org.opencontainers.image.version=${{ github.ref_name }}
