@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0"
+      xmlns:georss="http://www.georss.org/georss"
+      xmlns:atom="https://www.w3.org/2005/Atom">
+	<channel>
+		<title>Smithsonian / USGS Weekly Volcanic Activity Report</title>
+		<link>https://volcano.si.edu/reports_weekly.cfm</link>
+		<description>The Weekly Volcanic Activity Report is a cooperative project between the Smithsonian's Global Volcanism Program and the US Geological Survey's Volcano Hazards Program. Updated by 2300 UTC every Thursday, these notices are preliminary and subject to change as events are studied in more detail. This is not a comprehensive list of eruptions during the week, but rather a summary of activity that meet selected criteria. Carefully reviewed, detailed reports are published in the Bulletin of the Global Volcanism Network.</description>
+		<language>en-us</language>
+		<copyright>Smithsonian Institution</copyright>
+		<managingEditor>kuhns@si.edu (Sally Kuhn Sennert)</managingEditor>
+		<webMaster>gvp@si.edu (Ed Venzke)</webMaster>
+		<atom:link href="https://volcano.si.edu/news/WeeklyVolcanoRSS.xml" rel="self" type="application/rss+xml" />
+		<pubDate>Thu, 17 Sep 2026 01:20:04 -0500</pubDate>
+
+
+
+<item>
+<title>Krakatau (Indonesia) - Report for 10 September-16 September 2026 - New Eruptive Activity</title>
+<description>
+&lt;p&gt;The Pusat Vulkanologi dan Mitigasi Bencana Geologi (PVMBG) reported ongoing eruptive activity at Krakatau during 9-16 September. During 6-11 September there were 14 Strombolian eruptions reported. There was one eruption detected on a seismograph at 0047 on 9 September, but it was not visually confirmed. According to an analysis of a HIMAWARI-9 RGB image taken on that same day, an ash plume rose 2.1 km above the summit and drifted NW at 1000. As of 16 September the five journalists and three crew members of a missing ship had not been found. The Alert Level remained at 3 (on a scale of 1-4) and the public was advised to stay 3 km away from summit.&lt;/p&gt;
+&lt;p&gt;Sources: Antara News,Pusat Vulkanologi dan Mitigasi Bencana Geologi (PVMBG, also known as CVGHM)&lt;/p&gt;
+</description>
+<link>https://volcano.si.edu/reports_weekly.cfm</link>
+<guid isPermaLink="true">https://volcano.si.edu/reports_weekly.cfm#vn_262000</guid>
+<pubDate>Thu, 17 Sep 2026 01:20:04 -0400</pubDate>
+<georss:point>-6.1009 105.4233</georss:point>
+</item><item>
+<title>Kilauea (United States) - Report for 10 September-16 September 2026 - Continuing Eruptive Activity</title>
+<description>
+&lt;p&gt;The Hawaiian Volcano Observatory (HVO) reported that the eruption within Kilauea?s Kaluapele summit caldera, characterized by episodic fountaining, incandescence, and intermittent spatter from craters along the SW margin of Halema`uma`u Crater, continued at variable levels during 10-15 September. Occasional incandescence and flames were observed in webcams images from all three eruptive vents (S, W, and N) at Halema`uma`u Crater. On 10 September overflows were less frequent, slower, shorter in duration (less than 10 minutes), not fed by a dome fountain, and did not travel as far from the N vent. Overflows during the morning of 11 September were more vigorous and lasted longer than 10 minutes. Several of these were fed by dome fountains that were 5-10 m tall. They also traveled farther from the N vent compared to those from the 10th. 
+  
+There were 104 lava overflows from the N vent during 7-12 September, with the last one starting at 0727 on 12 September. Occasional spattering and flames were observed from the W vent and less frequently from the S vent; more energetic spatter and large flames were noted during drainback events. Each overflow during 11-12 September averaged about 20 minutes, separated by periods of about 10-15 minutes. The size and vigor of the dome fountains in the N vent gradually doubled in size to 10-15 m high on 12 September. 
+  
+Intermittent spatter bursts were visible at the N vent during the early morning of 13 September and increased in intensity throughout the day. Around noon, the bursts began depositing spatter that started to build a small cone on the rim of the N vent. During the afternoon, effusive activity began to cool within the upper regions of the conduit. There were distinct Strombolian eruptions reported throughout the night, characterized by large, individual spatter bursts. A seismic swarm consisting of shallow earthquakes occurred during 2115-2125 on 13 September.
+  
+Eruptive activity significantly slowed at 0600 on 14 September; no lava flows were observed after 12 September. By the afternoon of 14 September, the small cone around the N vent measured 11-12 m tall. Just before 2100, cracks on and near the base of the NW wall of Halema`uma`u Crater erupted lava just N of the vent complex. This was the same area where the short seismic swarm occurred the previous day. No fountaining was associated with these new vents, which began to feed a small lava flow in the NW corner of the crater floor. The Volcano Alert Level remained at Watch (the second highest level on a four-level scale) and the Aviation Color Code at Orange (the second highest color on a four-color scale).
+&lt;/p&gt;
+&lt;p&gt;Source: US Geological Survey Hawaiian Volcano Observatory (HVO) &lt;/p&gt;
+</description>
+<link>https://volcano.si.edu/reports_weekly.cfm</link>
+<guid isPermaLink="true">https://volcano.si.edu/reports_weekly.cfm#vn_332010</guid>
+<pubDate>Thu, 17 Sep 2026 01:20:04 -0400</pubDate>
+<georss:point>19.4210 -155.2870</georss:point>
+</item></channel></rss>
