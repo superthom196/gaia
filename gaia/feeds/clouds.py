@@ -62,7 +62,9 @@ def composite(images: list[tuple[np.ndarray, float]]) -> np.ndarray:
         w *= np.clip((78 - np.abs(np.degrees(lat))) / 12, 0, 1)
         num += c / np.maximum(mask, 1e-6) * w
         den += w
-    return np.where(den > 0, num / np.maximum(den, 1e-6), 0)
+    # Share out the overlaps, but where one satellite's edge meets no other
+    # (the Atlantic, with no Meteosat in GIBS), let its feather fade to clear.
+    return num / np.maximum(den, 1.0)
 
 
 async def fetch_image(client: httpx.AsyncClient, layer: str) -> np.ndarray:

@@ -131,3 +131,12 @@ def test_mercator_resampling_keeps_the_equator_in_the_middle():
     merc = textures.to_mercator(grid, 256)
     assert abs(merc[128, 0]) < 1.5
     assert merc[0, 0] > 84 and merc[-1, 0] < -84
+
+
+def test_basemap_rows_follow_mercator():
+    from gaia.basemap import mercator_rows
+
+    rows = mercator_rows(256, 1000)
+    assert rows[0] < 30 and rows[-1] > 970  # ~85 degrees north and south
+    assert rows[127] < 500 < rows[128]  # the equator between the middle rows
+    assert (np.diff(rows) >= 0).all()

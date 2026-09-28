@@ -1,5 +1,6 @@
-// The globe: MapLibre GL in globe mode, NASA imagery underneath, Gaia's
-// overlays (clouds, night, weather, wind) and the event markers on top.
+// The globe: MapLibre GL in globe mode, the Natural Earth base map underneath
+// (the box serves it; NASA's Blue Marble if it has none), Gaia's overlays
+// (clouds, night, weather, wind) and the event markers on top.
 
 import { KINDS, SEVERITY, iconImage, badgeImage } from "./kinds.js";
 
@@ -25,7 +26,7 @@ function graticule(step = 30) {
 
 const empty = () => ({ type: "FeatureCollection", features: [] });
 
-export function createGlobe(container, { center = [150, 15], zoom = 1.6, interactive = true } = {}) {
+export function createGlobe(container, { center = [0, 20], zoom = 1.6, interactive = true, basemap = null } = {}) {
   const map = new maplibregl.Map({
     container,
     center,
@@ -46,12 +47,14 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
         "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 0.55, 5, 0.25, 7, 0],
       },
       sources: {
-        base: {
-          type: "raster",
-          tiles: [`${GIBS}/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`],
-          tileSize: 256,
-          maxzoom: 8,
-        },
+        base: basemap
+          ? { type: "raster", tiles: [basemap], tileSize: 256, maxzoom: 6 }
+          : {
+            type: "raster",
+            tiles: [`${GIBS}/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`],
+            tileSize: 256,
+            maxzoom: 8,
+          },
         clouds: { type: "image", url: BLANK, coordinates: WORLD },
         night: { type: "image", url: BLANK, coordinates: WORLD },
         temp: { type: "image", url: BLANK, coordinates: WORLD },
@@ -65,8 +68,7 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
         { id: "space", type: "background", paint: { "background-color": "#0d0f11" } },
         {
           id: "base", type: "raster", source: "base",
-          // Natural colour, a little punchier than NASA's: green land, blue sea.
-          paint: { "raster-saturation": 0.25, "raster-contrast": 0.1, "raster-brightness-min": 0.1, "raster-fade-duration": 0 },
+          paint: { "raster-fade-duration": 0 },
         },
         { id: "clouds", type: "raster", source: "clouds", paint: { "raster-opacity": 0.6, "raster-fade-duration": 0 } },
         { id: "night", type: "raster", source: "night", paint: { "raster-opacity": 1, "raster-fade-duration": 0 } },

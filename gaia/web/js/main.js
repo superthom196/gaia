@@ -51,7 +51,8 @@ const state = {
 };
 const save = () => { if (!TV && !RENDER) localStorage.setItem("gaia.layers", JSON.stringify(state.layers)); };
 
-const globe = createGlobe("map", { center: TV ? [-160, 18] : [178, 16], zoom: TV ? 2.1 : 2.05 });
+// The globe opens over the box's own region (from its timezone).
+const globe = createGlobe("map", { center: config.home || [0, 20], zoom: TV ? 2.1 : 2.05, basemap: config.basemap });
 const map = globe.map;
 const card = createCard(globe, { tv: TV });
 const spin = createSpin(globe, { degreesPerSecond: TV ? 2 : 3 });

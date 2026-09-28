@@ -36,9 +36,11 @@ What the first build delivers, settled in one round of questions.
 - **The TV does no 3D work.** The box renders the globe and streams it to
   the TV over **WebRTC** (about 100–200 ms, so the remote feels live). The
   TV app plays the stream and sends key presses back.
-  - One **shared ambient stream** for every TV in screensaver mode. A TV gets
-    **its own interactive stream** when someone presses a button, and drops
-    back to the shared one when idle.
+  - **One stream.** Thom watches Gaia in one place at a time, so the box
+    renders one page: it tours events like a screensaver until the remote is
+    used, follows the keys, and goes back to touring after 5 quiet minutes.
+    No switch, so a key press answers at once. A second TV sees the same
+    picture.
   - **Only while a TV watches.** No Chromium runs until a TV connects; the
     renderers stop a minute after the last TV leaves, Chromium two minutes
     after that. (Measured on nexiom0: nothing watching costs no Chromium and
@@ -53,11 +55,15 @@ What the first build delivers, settled in one round of questions.
   code base.
 - **Engine:** my call, since the TV only shows video. Start with MapLibre GL
   v5 globe, and fall back to globe.gl/three.js if wind particles fail.
-- **Look:** a **bright, natural-colour globe** (green land, blue sea, a
-  little punchier than NASA's Blue Marble) on a graphite background,
+- **Look:** a **bright, atlas-like globe**: Natural Earth II, with green and
+  brown land, shaded relief and pale blue sea, on a graphite background,
   off-white hairlines and graticule, monospaced numbers. Day and night is
   off by default, and clouds are light, showing only real cloud, not haze.
-  (Thom found the first, muted look too dark and murky.)
+  (Thom found satellite imagery too dark and murky: the deep ocean is
+  near-black from space.)
+- **Opening view:** over the box's own region, from its timezone (the tz
+  database's city for `TZ`, latitude kept within 30°): Europe and Africa
+  for a UK box.
 - **Desktop layout:** the globe fills the screen, with floating collapsible
   panels (layers on the left, latest events and sea ice on the right,
   credits and feed status along the bottom). The **event card opens next to
@@ -157,7 +163,7 @@ All free and keyless. Every one responded on 2026-09-28 unless noted.
 | Sea ice (numbers) | NSIDC Sea Ice Index v4 `noaadata.apps.nsidc.org/NOAA/G02135/{north,south}/daily/data/*_seaice_extent_daily_v4.0.csv` and `..._climatology_1981-2010_v4.0.csv` | Daily | It's v4 now, not v3 |
 | Snow | GIBS `MODIS_Terra_NDSI_Snow_Cover` | Daily | Optional layer |
 | Ice sheets | Greenland: DMI Polar Portal (`polarportal.dk`) daily surface melt and mass balance. Antarctica: to find | Daily | **Research first:** find a feed that can be downloaded rather than read off a web page, and check its terms |
-| Base map | GIBS `MODIS_Terra_CorrectedReflectance_TrueColor` by day, `VIIRS_Black_Marble` by night | Daily | Or a bundled low-resolution Blue Marble, for when there's no internet |
+| Base map | Natural Earth II (public domain), cut into tiles to zoom 6 when the image is built (`gaia/basemap.py`); GIBS `VIIRS_Black_Marble` for night lights | Fixed | Baked into the image, so it works offline. GIBS Blue Marble if the tiles are missing (running from source) |
 | Wind, temperature, rain | NOAA GFS via the NOMADS filter `nomads.ncep.noaa.gov/cgi-bin/filter_gfs_1p00.pl`: `UGRD`/`VGRD` at 10 m, `TMP` at 2 m, `PRATE` | 6 h (00, 06, 12, 18 UTC runs, about 4 h late) | Start at 1°, try 0.5°. Decode GRIB2 with `eccodes` and write PNG textures (u and v in R and G), as in [mapbox/webgl-wind](https://github.com/mapbox/webgl-wind) (ISC licence, credit it). Respect NOMADS' rate limits |
 
 Show a credit line with every source on the page.
@@ -188,11 +194,10 @@ Show a credit line with every source on the page.
   WebRTC stream and sends key presses back over a data channel. The TV does
   no 3D work. Package `io.github.superthom196.gaia`.
 - **Remote:**
-  - Arrows spin the globe.
-  - OK flies to the next event and opens its card.
-  - Up and down change the zoom level.
-  - Holding OK (or Menu, where the remote has one the app sees) toggles the
-    layer panel. A Bravia's Action Menu button belongs to the TV.
+  - Left and right spin the globe; up and down change the zoom level.
+  - OK (or Menu, where the remote has one) opens the menu: Next event, Slow
+    spin, then the layers. Up and down move, OK picks, Back closes. Plain
+    D-pad: no long presses (a Bravia's Action Menu belongs to the TV).
   - Back returns to slow spin.
 - **Screensaver:** a `DreamService` showing the same page in ambient mode:
   slow spin, and every minute or so it flies to a recent event and shows its
@@ -215,11 +220,10 @@ Show a credit line with every source on the page.
   separate encoder pipeline.
 - **Signalling:** a WebSocket on Gaia's backend (`/api/rtc`) pairs a TV
   player with a renderer session.
-- **Sessions:** one **ambient** renderer (screensaver mode) that every idle
-  TV watches. A key press asks for an **interactive** renderer of its own. The
-  TV player drops back to ambient after 5 minutes without a key. Each session
-  starts when its first TV joins and stops 60 s after its last TV leaves.
-  Interactive sessions are capped by quality level (Standard 2, High 3).
+- **Session:** one renderer, **ambient**, that every TV watches. It starts
+  when the first TV joins and stops 60 s after the last one leaves. Remote
+  keys pause its tour and show the hints; after 5 minutes without a key it
+  returns to slow spin and the tour.
 - **Remote keys** travel over the WebRTC data channel to the renderer page,
   which handles them exactly as a browser in TV mode would.
 - **Quality:** chosen at startup from the hardware (render device, cores),

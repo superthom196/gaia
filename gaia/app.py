@@ -110,7 +110,13 @@ def create_app(settings: config.Settings | None = None, *, start_feeds: bool = T
     @app.get("/api/config")
     def api_config():
         """What the page needs to know about this box."""
-        return {"version": __version__, "quality": settings.quality, "tier": settings.tier}
+        return {
+            "version": __version__,
+            "quality": settings.quality,
+            "tier": settings.tier,
+            "home": settings.home,
+            "basemap": "/tiles/{z}/{x}/{y}.jpg" if settings.tiles.is_dir() else None,
+        }
 
     @app.websocket("/api/rtc")
     async def rtc(ws: WebSocket):
@@ -138,7 +144,14 @@ def create_app(settings: config.Settings | None = None, *, start_feeds: bool = T
         response = await call_next(request)
         if request.url.path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-cache"
+        elif request.url.path.startswith("/tiles/"):
+            # The base map changes only with a new image.
+            response.headers["Cache-Control"] = "public, max-age=604800"
         return response
 
     app.mount("/static", StaticFiles(directory=WEB), name="static")
+    if settings.tiles.is_dir():
+        app.mount("/tiles", StaticFiles(directory=settings.tiles), name="tiles")
+    else:
+        log.warning("no base map tiles at %s (see gaia/basemap.py)", settings.tiles)
     return app

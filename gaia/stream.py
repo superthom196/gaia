@@ -6,9 +6,9 @@ page captures its own tab and offers it to every TV that joins that session
 starts and stops those renderer pages and passes the WebRTC offers and
 answers between them over one WebSocket, `/api/rtc`.
 
-- The **ambient** session (screensaver mode) is shared by every idle TV.
-- A TV that gets a key press asks for an **interactive** session of its own,
-  capped by quality level.
+There is one session, **ambient**: Gaia is watched in one place at a time.
+It tours events like a screensaver until the remote is used, then follows
+the keys (gaia/web/js/tv.js). A second TV sees the same picture.
 
 Nothing runs until a TV asks: Gaia is on every box, most with no TV. A
 session starts when its first TV joins (the page takes 10-20 s to come up)
@@ -237,20 +237,10 @@ class Streams:
         session.ready.clear()
 
     async def _viewer(self, ws: WebSocket, hello: dict) -> None:
-        want = hello.get("want")
-        name = AMBIENT
-        if want == "interactive":
-            tv = "".join(c for c in str(hello.get("tv", "")) if c.isalnum() or c == "-")[:40]
-            name = f"tv-{tv or secrets.token_hex(4)}"
-            interactive = [s for s in self.sessions if s != AMBIENT and s != name]
-            if len(interactive) >= self.tier["interactive"]:
-                await ws.send_text(json.dumps({"type": "busy"}))
-                await ws.close()
-                return
         if not self._pw:
             await ws.close(code=4503, reason="streaming unavailable")
             return
-        session = await self._ensure(name)
+        session = await self._ensure(AMBIENT)
         vid = next(self._ids)
         session.viewers[vid] = ws
         try:
@@ -297,5 +287,4 @@ class Streams:
                 }
                 for s in self.sessions.values()
             ],
-            "max_interactive": self.tier["interactive"],
         }

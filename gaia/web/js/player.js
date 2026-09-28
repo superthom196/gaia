@@ -1,37 +1,30 @@
-// The TV's side of the stream. It watches the shared ambient stream until
-// someone presses a button, then switches to a stream of its own and sends
-// the keys there. After a few quiet minutes it goes back to the shared one.
+// The TV's side of the stream. It plays the box's one stream (Gaia is
+// watched in one place at a time) and sends the remote's keys back to it
+// over the stream's data channel.
 
 import { gathered } from "./sender.js";
 
-const IDLE = 5 * 60e3;
 const note = document.getElementById("note");
-// crypto.randomUUID needs a secure page, and TVs load Gaia over plain HTTP.
-const tvId = localStorage.getItem("gaia.tv")
-  || Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
-localStorage.setItem("gaia.tv", tvId);
 
 let conn = null;       // the connection whose picture is showing
-let mode = "ambient";
-let lastKey = 0;
-const queued = [];
+const queued = [];     // keys pressed before the key channel opened
 
-function connect(want) {
+function connect() {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/rtc`);
     const pc = new RTCPeerConnection({ iceServers: [] });
     // One object for the whole connection: the key channel arrives on it
     // after the picture does, so it mustn't be copied.
-    const c = { ws, pc, channel: null, want, stream: null };
+    const c = { ws, pc, channel: null, stream: null };
     pc.ondatachannel = (e) => {
       c.channel = e.channel;
-      e.channel.onopen = () => { while (queued.length && want === "interactive") e.channel.send(queued.shift()); };
+      e.channel.onopen = () => { while (queued.length) e.channel.send(queued.shift()); };
     };
     pc.ontrack = (e) => { c.stream = e.streams[0]; resolve(c); };
     pc.onconnectionstatechange = () => {
       if (["failed", "disconnected"].includes(pc.connectionState) && conn === c) reconnect();
     };
-    ws.onopen = () => ws.send(JSON.stringify({ type: "hello", role: "viewer", want, tv: tvId }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: "hello", role: "viewer" }));
     ws.onmessage = async (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === "offer") {
@@ -39,8 +32,6 @@ function connect(want) {
         await pc.setLocalDescription(await pc.createAnswer());
         await gathered(pc);
         ws.send(JSON.stringify({ type: "answer", sdp: pc.localDescription.sdp }));
-      } else if (msg.type === "busy") {
-        reject(new Error("busy"));
       }
     };
     ws.onclose = () => { reject(new Error("closed")); if (conn && conn.ws === ws) reconnect(); };
@@ -73,13 +64,12 @@ function play(stream) {
 }
 
 let showing = null;  // the video element on screen
-async function show(want) {
-  const next = await connect(want);
+async function show() {
+  const next = await connect();
   const video = await play(next.stream);
   const prev = conn, prevVideo = showing;
   conn = next;
   showing = video;
-  mode = want;
   note.textContent = "";
   if (prevVideo && prevVideo !== video) prevVideo.remove();
   if (prev) close(prev);
@@ -91,59 +81,24 @@ async function reconnect() {
   retrying = true;
   note.textContent = "Reconnecting…";
   for (let wait = 1000; ; wait = Math.min(wait * 2, 15000)) {
-    try { await show("ambient"); break; } catch (err) { console.warn("stream:", err.message); await new Promise((r) => setTimeout(r, wait)); }
+    try { await show(); break; } catch (err) { console.warn("stream:", err.message); await new Promise((r) => setTimeout(r, wait)); }
   }
   retrying = false;
 }
 
-async function press(key) {
-  lastKey = Date.now();
+function press(key) {
   const msg = JSON.stringify({ key });
-  if (mode === "interactive" && conn?.channel?.readyState === "open") {
-    conn.channel.send(msg);
-    return;
-  }
-  queued.push(msg);
-  // Already on (or on the way to) this TV's own stream: its key channel
-  // sends the queue as soon as it opens. Only the shared stream switches.
-  if (mode !== "ambient") return;
-  mode = "switching";
-  try {
-    await show("interactive");
-  } catch (err) {
-    mode = "ambient";
-    queued.length = 0;
-    note.textContent = err.message === "busy" ? "Every stream on this box is in use; showing the shared view" : "";
-    setTimeout(() => { note.textContent = ""; }, 4000);
-  }
+  if (conn?.channel?.readyState === "open") conn.channel.send(msg);
+  else queued.push(msg);
 }
 
 const REMOTE = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "ContextMenu", "Escape", "Backspace", "GoBack", "BrowserBack", "MediaPlayPause", "m"]);
-// Holding OK opens the layers: most remotes have no Menu key the app sees
-// (a Bravia's Action Menu belongs to the TV). A short press is still OK.
-const HOLD = 600;
-let okTimer = null;  // a timeout while OK is down, "held" once it fired
 window.addEventListener("keydown", (e) => {
   if (!REMOTE.has(e.key)) return;
   e.preventDefault();
-  if (e.key === "Enter") {
-    if (e.repeat) return;
-    clearTimeout(okTimer);
-    okTimer = setTimeout(() => { okTimer = "held"; press("ContextMenu"); }, HOLD);
-    return;
-  }
   press(e.key);
-});
-window.addEventListener("keyup", (e) => {
-  if (e.key !== "Enter" || !okTimer) return;
-  if (okTimer !== "held") { clearTimeout(okTimer); press("Enter"); }
-  okTimer = null;
 });
 // The Android TV app forwards Menu and Back this way.
 window.gaiaKey = (name) => press(name);
-
-setInterval(() => {
-  if (mode === "interactive" && Date.now() - lastKey > IDLE) show("ambient").catch(() => {});
-}, 15e3);
 
 reconnect();

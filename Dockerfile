@@ -1,3 +1,14 @@
+# The base map: Natural Earth II cut into tiles (gaia/basemap.py). Built once
+# on the build machine's own platform; the tiles are the same for every one.
+FROM --platform=$BUILDPLATFORM python:3.13-slim AS basemap
+ARG NE2=https://naciscdn.org/naturalearth/10m/raster/NE2_LR_LC_SR_W_DR.zip
+RUN pip install --no-cache-dir numpy pillow
+COPY gaia/basemap.py /basemap.py
+RUN python -c "import sys, urllib.request as u; u.urlretrieve(sys.argv[1], '/ne2.zip')" "$NE2" \
+    && python -m zipfile -e /ne2.zip /ne2 \
+    && python /basemap.py /ne2/NE2_LR_LC_SR_W_DR.tif /tiles \
+    && rm -rf /ne2 /ne2.zip
+
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -29,6 +40,7 @@ RUN python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml
     && for i in 1 2 3 4 5; do pip install --no-cache-dir -r /tmp/requirements.txt && break; sleep 5; done \
     && pip show fastapi playwright eccodes > /dev/null
 
+COPY --from=basemap /tiles ./tiles
 COPY gaia ./gaia
 RUN pip install --no-cache-dir --no-deps .
 

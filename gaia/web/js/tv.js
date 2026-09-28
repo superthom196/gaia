@@ -1,10 +1,14 @@
 // Spinning, the TV remote, and the screensaver's tour.
 //
-// Remote (PLAN.md): left and right spin, up and down zoom, OK flies to the
-// next event and opens its card, Menu opens the layers, Back returns to slow
-// spin. In the layers menu the arrows move the focus and OK switches a layer.
+// Remote (PLAN.md): left and right spin, up and down zoom, OK (or Menu) opens
+// the menu, Back returns to slow spin. In the menu (Next event, Slow spin,
+// then the layers) up and down move, OK picks, Back closes.
+//
+// The TV stream is one page on the box: it tours events like a screensaver
+// until someone uses the remote, and goes back to touring after IDLE.
 
 const HOME_ZOOM = 2.1;
+const IDLE = 5 * 60e3;
 
 export function createSpin(globe, { degreesPerSecond = 3 } = {}) {
   const map = globe.map;
@@ -46,21 +50,35 @@ const KEY = {
 export function setupTv({ globe, card, spin, list, ambient }) {
   const map = globe.map;
   document.body.classList.add("tv");
-  if (ambient) document.body.classList.add("ambient");
-  document.getElementById("tv-hints").hidden = !!ambient;
-  let index = -1, menuIndex = 0;
+  document.getElementById("tv-hints").hidden = false;
+  let index = -1, menuIndex = 0, lastKey = 0, idleTimer = null;
 
-  const layers = () => [...document.querySelectorAll("#layers .layer")];
+  // The menu is the layers panel with the remote's actions on top.
+  const actions = [["Next event", () => next()], ["Slow spin", () => home()]];
+  const top = document.createElement("div");
+  top.innerHTML = '<div class="group-label">Go to</div>';
+  for (const [label, run] of actions) {
+    const b = document.createElement("button");
+    b.className = "layer tv-action";
+    b.innerHTML = `<span class="name"></span>`;
+    b.querySelector(".name").textContent = label;
+    b.addEventListener("click", (e) => { e.stopPropagation(); openMenu(false); run(); });
+    top.append(b);
+  }
+  document.getElementById("layers-body").prepend(top);
+  document.querySelector("#layers h2").textContent = "Menu";
+
+  const items = () => [...document.querySelectorAll("#layers .layer")];
   const menuOpen = () => document.body.classList.contains("menu-open");
-  function focusLayer(i) {
-    const all = layers();
+  function focusItem(i) {
+    const all = items();
     menuIndex = (i + all.length) % all.length;
     all.forEach((b, j) => b.classList.toggle("focus", j === menuIndex));
     all[menuIndex].scrollIntoView({ block: "nearest" });
   }
   function openMenu(open) {
     document.body.classList.toggle("menu-open", open);
-    if (open) focusLayer(menuIndex);
+    if (open) focusItem(0);
   }
 
   function goTo(feature, zoom = 3.4) {
@@ -71,10 +89,10 @@ export function setupTv({ globe, card, spin, list, ambient }) {
   }
 
   function next() {
-    const items = list();
-    if (!items.length) return;
-    index = (index + 1) % items.length;
-    goTo(items[index]);
+    const all = list();
+    if (!all.length) return;
+    index = (index + 1) % all.length;
+    goTo(all[index]);
   }
 
   function home() {
@@ -85,11 +103,22 @@ export function setupTv({ globe, card, spin, list, ambient }) {
     spin.on = true;
   }
 
+  // Someone has the remote: show the hints, pause the tour; after a quiet
+  // spell, back to the screensaver.
+  function inUse() {
+    lastKey = Date.now();
+    document.body.classList.remove("ambient");
+    clearTimeout(idleTimer);
+    if (ambient) idleTimer = setTimeout(() => { home(); document.body.classList.add("ambient"); }, IDLE);
+  }
+  if (ambient) document.body.classList.add("ambient");
+
   function press(action) {
+    inUse();
     if (menuOpen()) {
-      if (action === "up") focusLayer(menuIndex - 1);
-      else if (action === "down") focusLayer(menuIndex + 1);
-      else if (action === "ok") layers()[menuIndex].click();
+      if (action === "up") focusItem(menuIndex - 1);
+      else if (action === "down") focusItem(menuIndex + 1);
+      else if (action === "ok") items()[menuIndex].click();
       else if (action === "menu" || action === "back") openMenu(false);
       return;
     }
@@ -99,8 +128,7 @@ export function setupTv({ globe, card, spin, list, ambient }) {
       case "right": spin.on = false; map.easeTo({ center: [c.lng + 25, c.lat], duration: 600 }); break;
       case "up": map.easeTo({ zoom: Math.min(8, map.getZoom() + 0.8), duration: 500 }); break;
       case "down": map.easeTo({ zoom: Math.max(1, map.getZoom() - 0.8), duration: 500 }); break;
-      case "ok": next(); break;
-      case "menu": openMenu(true); break;
+      case "ok": case "menu": openMenu(true); break;
       case "back": home(); break;
     }
   }
@@ -114,15 +142,16 @@ export function setupTv({ globe, card, spin, list, ambient }) {
   // The TV app forwards keys the WebView can't see (Menu, Back) this way.
   window.gaiaKey = (name) => press(KEY[name] || name);
 
-  if (ambient) tour({ goTo, home, list });
+  if (ambient) tour({ goTo, home, list, busy: () => Date.now() - lastKey < IDLE });
   return { press };
 }
 
 /** Screensaver: slow spin; every minute or so, visit a recent event. */
-function tour({ goTo, home, list }) {
+function tour({ goTo, home, list, busy }) {
   const EVERY = 60e3, SHOW = 18e3;
   let recent = [];
   async function visit() {
+    if (busy()) return;
     const items = list().slice(0, 40);
     if (items.length) {
       // Prefer severe and recent events, and don't repeat the last few.
@@ -133,7 +162,7 @@ function tour({ goTo, home, list }) {
       const pick = (scored[0] || [items[0]])[0];
       recent = [pick.properties.id, ...recent].slice(0, 6);
       goTo(pick, 3);
-      setTimeout(home, SHOW);
+      setTimeout(() => { if (!busy()) home(); }, SHOW);
     }
   }
   setTimeout(() => { visit(); setInterval(visit, EVERY); }, 20e3);

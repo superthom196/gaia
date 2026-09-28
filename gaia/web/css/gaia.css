@@ -207,7 +207,7 @@ body.tv { font-size: 22px; }
 :root:has(body.tv) { font-size: 22px; --gap: 48px; }
 body.tv .controls, body.tv .footer .status, body.tv #latest { display: none; }
 body.tv .brand { top: 36px; }
-body.tv #layers { top: 110px; width: 520px; display: none; }
+body.tv #layers { top: 110px; width: 520px; max-height: calc(100vh - 220px); display: none; }
 body.tv.menu-open #layers { display: block; }
 body.tv .layer { min-height: 54px; padding: 0 16px; border-radius: 10px; }
 body.tv .layer:focus-visible, body.tv .layer.focus { outline: none; background: var(--text); color: var(--panel-solid); box-shadow: 0 0 0 4px rgba(232, 230, 225, 0.25); }

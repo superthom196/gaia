@@ -65,3 +65,45 @@ def test_lite_never_streams(monkeypatch):
     assert config.load().stream is False
     monkeypatch.setenv("GAIA_QUALITY", "auto")
     assert config.load().quality_source == "auto"
+
+
+def test_home_follows_the_timezone(tmp_path):
+    table = tmp_path / "zone.tab"
+    table.write_text(
+        "# comment\nGB\t+513030-0000731\tEurope/London\nAU\t-3352+15113\tAustralia/Sydney\n"
+    )
+    config.ZONE_TABLES[:] = [table]
+    try:
+        assert config.home("Europe/London") == (-0.1, 30.0)  # latitude kept within 30
+        assert config.home("Australia/Sydney") == (151.2, -30.0)
+        assert config.home("Nowhere/Else") == (0.0, 20.0)
+    finally:
+        config.ZONE_TABLES[:] = [
+            config.Path("/usr/share/zoneinfo/zone1970.tab"),
+            config.Path("/usr/share/zoneinfo/zone.tab"),
+        ]
+
+
+def test_config_gives_home_and_serves_the_base_map(tmp_path):
+    tiles = tmp_path / "tiles"
+    (tiles / "0" / "0").mkdir(parents=True)
+    (tiles / "0" / "0" / "0.jpg").write_bytes(b"\xff\xd8jpeg")
+    settings = config.Settings(
+        data=tmp_path,
+        quality="lite",
+        quality_source="set",
+        stream=False,
+        port=0,
+        tiles=tiles,
+        home=(-0.1, 30.0),
+    )
+    with TestClient(create_app(settings, start_feeds=False)) as c:
+        body = c.get("/api/config").json()
+        assert body["home"] == [-0.1, 30.0]
+        assert body["basemap"] == "/tiles/{z}/{x}/{y}.jpg"
+        tile = c.get("/tiles/0/0/0.jpg")
+        assert tile.status_code == 200 and "max-age" in tile.headers["cache-control"]
+
+
+def test_no_tiles_means_no_base_map_url(client):
+    assert client.get("/api/config").json()["basemap"] is None
