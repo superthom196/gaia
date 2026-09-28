@@ -12,7 +12,7 @@ export function createSpin(globe, { degreesPerSecond = 3 } = {}) {
   const frame = (now) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (on && !held && !map.isMoving()) {
+    if (on && !held && !spin.paused && !map.isMoving()) {
       const c = map.getCenter();
       map.jumpTo({ center: [((c.lng + degreesPerSecond * dt + 540) % 360) - 180, c.lat] });
     }
@@ -20,6 +20,7 @@ export function createSpin(globe, { degreesPerSecond = 3 } = {}) {
   };
   requestAnimationFrame(frame);
   const spin = {
+    paused: false, // a renderer nobody watches
     get on() { return on; },
     set on(v) { on = v; held = false; },
     /** Pause while someone is using the globe; carry on after a quiet spell. */

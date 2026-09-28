@@ -199,6 +199,7 @@ class Streams:
             return
         session.renderer = ws
         session.ready.set()
+        await self._tell_viewers(session)
         async for raw in ws.iter_text():
             msg = json.loads(raw)
             viewer = session.viewers.get(msg.get("viewer"))
@@ -227,6 +228,7 @@ class Streams:
         vid = next(self._ids)
         session.viewers[vid] = ws
         try:
+            await self._tell_viewers(session)
             await session.renderer.send_text(json.dumps({"type": "join", "viewer": vid}))
             async for raw in ws.iter_text():
                 msg = json.loads(raw)
@@ -241,6 +243,15 @@ class Streams:
             if session.renderer:
                 with contextlib.suppress(Exception):
                     await session.renderer.send_text(json.dumps({"type": "leave", "viewer": vid}))
+                    await self._tell_viewers(session)
+
+    @staticmethod
+    async def _tell_viewers(session: Session) -> None:
+        """A renderer with nobody watching pauses its animation."""
+        if session.renderer:
+            await session.renderer.send_text(
+                json.dumps({"type": "viewers", "count": len(session.viewers)})
+            )
 
     def report(self) -> dict:
         return {

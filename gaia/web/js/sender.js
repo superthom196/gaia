@@ -63,6 +63,8 @@ export async function start(session, tier) {
       send({ type: "offer", viewer: msg.viewer, sdp: pc.localDescription.sdp });
     } else if (msg.type === "answer") {
       await peers.get(msg.viewer)?.setRemoteDescription({ type: "answer", sdp: msg.sdp });
+    } else if (msg.type === "viewers") {
+      window.gaiaIdle?.(msg.count === 0);
     } else if (msg.type === "leave") {
       peers.get(msg.viewer)?.close();
       peers.delete(msg.viewer);

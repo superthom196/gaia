@@ -152,6 +152,7 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
   const handlers = { select: [] };
   const globe = {
     map,
+    paused: false,
     ready: new Promise((resolve) => map.on("load", resolve)),
     on(name, fn) { handlers[name].push(fn); },
 
@@ -207,7 +208,7 @@ export function createGlobe(container, { center = [150, 15], zoom = 1.6, interac
 
   // New quakes pulse outwards.
   const ripple = () => {
-    if (map.getLayer("quake-ripple")) {
+    if (!globe.paused && map.getLayer("quake-ripple")) {
       const t = (performance.now() % 2000) / 2000;
       map.setPaintProperty("quake-ripple", "circle-radius", 6 + t * 22);
       map.setPaintProperty("quake-ripple", "circle-stroke-opacity", 0.9 * (1 - t));

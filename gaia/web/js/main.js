@@ -194,6 +194,11 @@ spinBtn.onclick = () => {
 };
 
 if (TV) setupTv({ globe, card, spin, list: () => shown, ambient: AMBIENT });
+// A renderer with no TV watching stops animating, so the box sits idle.
+window.gaiaIdle = (idle) => {
+  spin.paused = globe.paused = idle;
+  if (wind) wind.enabled = !idle && state.layers.wind;
+};
 if (RENDER) import("./sender.js").then((m) => m.start(RENDER, config.tier));
 window.gaia = { globe, state, get shown() { return shown; }, select };
 document.body.dataset.ready = "1";
