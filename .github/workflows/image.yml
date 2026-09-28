@@ -1,9 +1,10 @@
 # Publishes the Gaia image to ghcr.io/superthom196/gaia for each vX.Y.Z tag,
-# as :vX.Y.Z and :latest. Nexiom boxes pull :latest when Gaia is installed or
-# updated, so pushing a tag is what releases Gaia to them.
+# as :vX.Y.Z (and :latest, for people running it by hand). Nexiom pins the
+# exact vX.Y.Z in each of its releases and never pulls :latest.
 #
 # The first push creates the package as private: set its visibility to public
 # once in the package settings on GitHub, or boxes can't pull it.
+
 name: image
 
 on:

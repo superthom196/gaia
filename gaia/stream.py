@@ -6,11 +6,14 @@ page captures its own tab and offers it to every TV that joins that session
 starts and stops those renderer pages and passes the WebRTC offers and
 answers between them over one WebSocket, `/api/rtc`.
 
-- The **ambient** session (screensaver mode) always runs, and every idle TV
-  watches it.
-- A TV that gets a key press asks for an **interactive** session of its own.
-  It's started on demand, capped by quality level, and stopped once no TV
-  has watched it for a short while.
+- The **ambient** session (screensaver mode) is shared by every idle TV.
+- A TV that gets a key press asks for an **interactive** session of its own,
+  capped by quality level.
+
+Nothing runs until a TV asks: Gaia is on every box, most with no TV. A
+session starts when its first TV joins (the page takes 10-20 s to come up)
+and stops once no TV has watched it for a short while; Chromium itself quits
+when no session is left.
 """
 
 import asyncio
@@ -31,7 +34,8 @@ from gaia.config import Settings
 log = logging.getLogger("gaia.stream")
 
 AMBIENT = "ambient"
-GRACE = 45  # seconds an interactive session lives on with no viewers
+GRACE = 60  # seconds a session lives on with no viewers
+BROWSER_GRACE = 120  # seconds Chromium stays up with no sessions
 START_TIMEOUT = 60
 
 
@@ -84,6 +88,7 @@ class Streams:
         self._browser = None
         self._reaper: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+        self._idle_since = time.time()
         self.error: str | None = None
 
     # ---- lifecycle ----
@@ -91,21 +96,32 @@ class Streams:
     async def start(self) -> None:
         try:
             from playwright.async_api import async_playwright
+        except ImportError as exc:  # the web page keeps working without streams
+            self.error = f"playwright missing: {exc}"
+            log.error("TV streaming is off: %s", self.error)
+            return
+        self._pw = await async_playwright().start()
+        self._reaper = asyncio.create_task(self._reap())
 
-            self._pw = await async_playwright().start()
-            # A full Chromium in new headless mode can capture a tab;
-            # Playwright's default headless shell can't. The image uses
-            # Debian's (GAIA_CHROMIUM); elsewhere Playwright's own.
-            path = os.environ.get("GAIA_CHROMIUM")
-            options = {"executable_path": path} if path else {"channel": "chromium"}
+    async def _launch(self) -> None:
+        """Start Chromium, the first time a TV asks for a stream."""
+        if self._browser:
+            return
+        # A full Chromium in new headless mode can capture a tab; Playwright's
+        # default headless shell can't. The image uses Debian's
+        # (GAIA_CHROMIUM); elsewhere Playwright's own.
+        path = os.environ.get("GAIA_CHROMIUM")
+        options = {"executable_path": path} if path else {"channel": "chromium"}
+        try:
             self._browser = await self._pw.chromium.launch(
                 headless=True, args=chromium_args(), **options
             )
-        except Exception as exc:  # the web page keeps working without streams
+        except Exception as exc:
             self.error = f"{type(exc).__name__}: {exc}"[:300]
-            log.error("TV streaming is off: %s", self.error)
-            return
-        self._reaper = asyncio.create_task(self._reap())
+            log.error("can't start Chromium: %s", self.error)
+            raise
+        self.error = None
+        log.info("Chromium started")
 
     async def stop(self) -> None:
         if self._reaper:
@@ -133,10 +149,14 @@ class Streams:
         page.on("crash", lambda *_: asyncio.create_task(self._close(session)))
         page.on("console", lambda m: self._console(name, m))
         page.on("pageerror", lambda e: log.warning("%s page error: %s", name, e))
-        await page.goto(url)
-        await page.wait_for_selector("body[data-ready]", timeout=START_TIMEOUT * 1000)
-        # A key press is the user gesture getDisplayMedia needs.
-        await page.keyboard.press("Shift")
+        try:
+            await page.goto(url)
+            await page.wait_for_selector("body[data-ready]", timeout=START_TIMEOUT * 1000)
+            # A key press is the user gesture getDisplayMedia needs.
+            await page.keyboard.press("Shift")
+        except Exception:
+            await self._close(session)
+            raise
         log.info("renderer %s opened", name)
         return session
 
@@ -159,18 +179,25 @@ class Streams:
     async def _reap(self) -> None:
         while True:
             try:
-                if AMBIENT not in self.sessions:
-                    await self._ensure(AMBIENT)
                 now = time.time()
                 for s in list(self.sessions.values()):
-                    if s.name != AMBIENT and not s.viewers and now - s.empty_since > GRACE:
+                    if not s.viewers and now - s.empty_since > GRACE:
                         await self._close(s)
+                if self.sessions:
+                    self._idle_since = now
+                elif self._browser and now - self._idle_since > BROWSER_GRACE:
+                    async with self._lock:
+                        if not self.sessions:
+                            await self._browser.close()
+                            self._browser = None
+                            log.info("Chromium stopped: no TV is watching")
             except Exception as exc:
                 log.warning("stream upkeep: %s", exc)
             await asyncio.sleep(10)
 
     async def _ensure(self, name: str) -> Session:
         async with self._lock:
+            await self._launch()
             session = await self._open(name)
         await asyncio.wait_for(session.ready.wait(), START_TIMEOUT)
         return session
@@ -221,7 +248,7 @@ class Streams:
                 await ws.send_text(json.dumps({"type": "busy"}))
                 await ws.close()
                 return
-        if not self._browser:
+        if not self._pw:
             await ws.close(code=4503, reason="streaming unavailable")
             return
         session = await self._ensure(name)

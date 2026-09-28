@@ -1,0 +1,79 @@
+# Builds the Android TV app for each vX.Y.Z tag and attaches it to that
+# release as Gaia-TV-X.Y.Z.apk. Nexiom finds the newest release and downloads
+# the APK from it without logging in, so the repository has to be public.
+name: tv-release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing vX.Y.Z tag to build and attach the APK to
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Work out the version
+        run: |
+          version="${TAG#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag '$TAG' is not vX.Y.Z"; exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore the signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.GAIA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::GAIA_KEYSTORE_BASE64 is not set"; exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/gaia.jks"
+
+      - name: Build the signed APK
+        working-directory: tv
+        env:
+          GAIA_KEYSTORE_PATH: ${{ runner.temp }}/gaia.jks
+          GAIA_KEYSTORE_PASSWORD: ${{ secrets.GAIA_KEYSTORE_PASSWORD }}
+          GAIA_KEY_ALIAS: ${{ secrets.GAIA_KEY_ALIAS }}
+          GAIA_KEY_PASSWORD: ${{ secrets.GAIA_KEY_PASSWORD }}
+        run: GAIA_VERSION="$VERSION" ./gradlew assembleRelease
+
+      - name: Check it isn't debug-signed
+        working-directory: tv
+        run: |
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
+          if "$apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk | grep -q "CN=Android Debug"; then
+            echo "::error::APK is debug-signed; the keystore secrets were not picked up"; exit 1
+          fi
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp tv/app/build/outputs/apk/release/app-release.apk "Gaia-TV-$VERSION.apk"
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" "Gaia-TV-$VERSION.apk" --clobber
