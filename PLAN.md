@@ -189,7 +189,8 @@ Show a credit line with every source on the page.
   - Arrows spin the globe.
   - OK flies to the next event and opens its card.
   - Up and down change the zoom level.
-  - Menu toggles the layer panel.
+  - Holding OK (or Menu, where the remote has one the app sees) toggles the
+    layer panel. A Bravia's Action Menu button belongs to the TV.
   - Back returns to slow spin.
 - **Screensaver:** a `DreamService` showing the same page in ambient mode:
   slow spin, and every minute or so it flies to a recent event and shows its

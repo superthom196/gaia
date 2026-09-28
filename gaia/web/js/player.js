@@ -119,10 +119,25 @@ async function press(key) {
 }
 
 const REMOTE = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "ContextMenu", "Escape", "Backspace", "GoBack", "BrowserBack", "MediaPlayPause", "m"]);
+// Holding OK opens the layers: most remotes have no Menu key the app sees
+// (a Bravia's Action Menu belongs to the TV). A short press is still OK.
+const HOLD = 600;
+let okTimer = null;  // a timeout while OK is down, "held" once it fired
 window.addEventListener("keydown", (e) => {
   if (!REMOTE.has(e.key)) return;
   e.preventDefault();
+  if (e.key === "Enter") {
+    if (e.repeat) return;
+    clearTimeout(okTimer);
+    okTimer = setTimeout(() => { okTimer = "held"; press("ContextMenu"); }, HOLD);
+    return;
+  }
   press(e.key);
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key !== "Enter" || !okTimer) return;
+  if (okTimer !== "held") { clearTimeout(okTimer); press("Enter"); }
+  okTimer = null;
 });
 // The Android TV app forwards Menu and Back this way.
 window.gaiaKey = (name) => press(name);
