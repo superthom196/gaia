@@ -199,7 +199,9 @@ Show a credit line with every source on the page.
   - OK (or Menu, where the remote has one) opens the menu: Next event, Slow
     spin, then the layers. Up and down move, OK picks, Back closes. Plain
     D-pad: no long presses (a Bravia's Action Menu belongs to the TV).
-  - Back returns to slow spin.
+  - Back returns to slow spin; Back at slow spin leaves the app, as on any
+    TV app. The box knows when there's nothing left to undo and tells the TV
+    over the data channel. With no stream up, Back leaves straight away.
 - **Screensaver:** a `DreamService` showing the same page in ambient mode:
   slow spin, and every minute or so it flies to a recent event and shows its
   card.

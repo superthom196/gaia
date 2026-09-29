@@ -5,12 +5,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 
 /**
  * Gaia on the TV. The remote drives the globe: left and right spin it, up and
- * down zoom, OK flies to the next event, Menu opens the layers and Back
- * returns to slow spin. Home leaves the app, as on any TV app.
+ * down zoom, OK or Menu opens the menu, and Back steps out: it closes the
+ * menu, then returns to slow spin, then leaves the app. The box decides when
+ * there's nothing left to undo and the page calls `GaiaApp.exit()`.
  *
  * `adb shell am start -n io.github.superthom196.gaia/.MainActivity -e url http://…/tv`
  * points the app (and the screensaver) at another address, and keeps it.
@@ -23,6 +25,7 @@ class MainActivity : Activity() {
         takeUrl(intent)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         web = GaiaWeb.create(this)
+        web.addJavascriptInterface(Bridge(), "GaiaApp")
         setContentView(web)
         web.requestFocus()
     }
@@ -36,6 +39,11 @@ class MainActivity : Activity() {
         val url = intent?.getStringExtra("url")?.takeIf { it.startsWith("http") } ?: return false
         GaiaWeb.saveUrl(this, url)
         return true
+    }
+
+    private inner class Bridge {
+        @JavascriptInterface
+        fun exit() = runOnUiThread { finish() }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean =

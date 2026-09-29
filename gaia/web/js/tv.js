@@ -1,8 +1,9 @@
 // Spinning, the TV remote, and the screensaver's tour.
 //
 // Remote (PLAN.md): left and right spin, up and down zoom, OK (or Menu) opens
-// the menu, Back returns to slow spin. In the menu (Next event, Slow spin,
-// then the layers) up and down move, OK picks, Back closes.
+// the menu, Back returns to slow spin, and Back at slow spin leaves the TV
+// app. In the menu (Next event, Slow spin, then the layers) up and down move,
+// OK picks, Back closes.
 //
 // The TV stream is one page on the box: it tours events like a screensaver
 // until someone uses the remote, and goes back to touring after IDLE.
@@ -52,6 +53,7 @@ export function setupTv({ globe, card, spin, list, ambient }) {
   document.body.classList.add("tv");
   document.getElementById("tv-hints").hidden = false;
   let index = -1, menuIndex = 0, lastKey = 0, idleTimer = null;
+  let resting = true;  // slow spin with nothing to undo: Back leaves the app
 
   // The menu is the layers panel with the remote's actions on top.
   const actions = [["Next event", () => next()], ["Slow spin", () => home()]];
@@ -82,6 +84,7 @@ export function setupTv({ globe, card, spin, list, ambient }) {
   }
 
   function goTo(feature, zoom = 3.4) {
+    resting = false;
     spin.on = false;
     map.flyTo({ center: feature.geometry.coordinates, zoom, duration: 2600, essential: true });
     globe.select(feature);
@@ -101,6 +104,7 @@ export function setupTv({ globe, card, spin, list, ambient }) {
     openMenu(false);
     map.easeTo({ zoom: HOME_ZOOM, pitch: 0, duration: 1500 });
     spin.on = true;
+    resting = true;
   }
 
   // Someone has the remote: show the hints, pause the tour; after a quiet
@@ -113,6 +117,7 @@ export function setupTv({ globe, card, spin, list, ambient }) {
   }
   if (ambient) document.body.classList.add("ambient");
 
+  /** Returns "exit" when Back has nothing left to undo. */
   function press(action) {
     inUse();
     if (menuOpen()) {
@@ -122,6 +127,8 @@ export function setupTv({ globe, card, spin, list, ambient }) {
       else if (action === "menu" || action === "back") openMenu(false);
       return;
     }
+    if (action === "back" && resting) return "exit";
+    if (action !== "ok" && action !== "menu") resting = false;
     const c = map.getCenter();
     switch (action) {
       case "left": spin.on = false; map.easeTo({ center: [c.lng - 25, c.lat], duration: 600 }); break;

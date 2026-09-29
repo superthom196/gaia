@@ -51,7 +51,8 @@ export async function start(session, tier) {
       const channel = pc.createDataChannel("keys");
       channel.onmessage = (m) => {
         const { key: pressed } = JSON.parse(m.data);
-        window.gaiaKey?.(pressed);
+        // Back at slow spin: tell the TV to leave the app.
+        if (window.gaiaKey?.(pressed) === "exit") channel.send(JSON.stringify({ exit: true }));
         send({ type: "key", viewer: msg.viewer });
       };
       pc.onconnectionstatechange = () => {

@@ -1,6 +1,7 @@
 // The TV's side of the stream. It plays the box's one stream (Gaia is
 // watched in one place at a time) and sends the remote's keys back to it
-// over the stream's data channel.
+// over the stream's data channel. When Back has nothing left to undo on the
+// box, the box says so and the TV app closes.
 
 import { gathered } from "./sender.js";
 
@@ -19,6 +20,7 @@ function connect() {
     pc.ondatachannel = (e) => {
       c.channel = e.channel;
       e.channel.onopen = () => { while (queued.length) e.channel.send(queued.shift()); };
+      e.channel.onmessage = (m) => { if (JSON.parse(m.data).exit) leave(); };
     };
     pc.ontrack = (e) => { c.stream = e.streams[0]; resolve(c); };
     pc.onconnectionstatechange = () => {
@@ -86,9 +88,17 @@ async function reconnect() {
   retrying = false;
 }
 
+const BACK = new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+
+/** Back to the TV's launcher (the Android app's bridge; nothing in a browser). */
+function leave() {
+  window.GaiaApp?.exit();
+}
+
 function press(key) {
   const msg = JSON.stringify({ key });
   if (conn?.channel?.readyState === "open") conn.channel.send(msg);
+  else if (BACK.has(key)) leave();  // no stream to steer: Back just leaves
   else queued.push(msg);
 }
 
