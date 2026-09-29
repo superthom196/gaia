@@ -91,8 +91,11 @@ button { cursor: pointer; }
 .icon-btn[aria-pressed="true"] { border-color: var(--line-strong); }
 
 #layers { position: fixed; left: var(--gap); top: 56px; width: 248px; max-height: calc(100vh - 110px); overflow: auto; }
-#layers-toggle svg { transition: transform 0.2s; }
-#layers-toggle[aria-expanded="false"] svg { transform: rotate(-90deg); }
+.collapse svg { transition: transform 0.2s; }
+.collapse[aria-expanded="false"] svg { transform: rotate(-90deg); }
+.panel.folded > :not(.panel-head) { display: none; }
+.panel.folded .panel-head { padding-bottom: 12px; }
+#latest .collapse { display: none; }
 .panel-body { padding: 0 6px 8px; }
 .group-label { padding: 10px 8px 4px; font-size: 0.714rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
 .rule { height: 1px; background: var(--line); margin: 8px; }
@@ -201,6 +204,17 @@ button { cursor: pointer; }
 .status-list td:last-child { text-align: right; font-family: var(--mono); color: var(--muted); }
 
 .glyph path, .glyph circle { vector-effect: non-scaling-stroke; }
+
+/* ---- phone: both panels fold to their heads side by side, and open full width ---- */
+@media (max-width: 640px) {
+  #layers, #latest { top: 56px; bottom: auto; width: calc(50% - var(--gap) * 1.5); max-height: 62dvh; }
+  #latest { right: var(--gap); }
+  #latest .collapse { display: inline-flex; }
+  #latest.folded #latest-count { display: none; }
+  .panel-head { cursor: pointer; }
+  #layers:not(.folded), #latest:not(.folded) { left: var(--gap); right: var(--gap); width: auto; z-index: 4; }
+  .controls { left: auto; right: var(--gap); }
+}
 
 /* ---- TV: the same page, read from the sofa and driven by a remote ---- */
 body.tv { font-size: 22px; }

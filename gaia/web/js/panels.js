@@ -30,13 +30,34 @@ export function renderLayers(groups, state, onToggle) {
     b.setAttribute("aria-pressed", String(on));
     onToggle(b.dataset.layer, on);
   });
-  const toggle = $("layers-toggle");
-  toggle.addEventListener("click", () => {
-    const open = toggle.getAttribute("aria-expanded") !== "true";
-    toggle.setAttribute("aria-expanded", String(open));
-    toggle.setAttribute("aria-label", open ? "Collapse layers" : "Expand layers");
-    $("layers-body").hidden = !open;
-  });
+}
+
+/** The chevrons that fold the layers and latest panels down to their heads.
+ * On a phone both start folded, and opening one folds the other. */
+export function wirePanels() {
+  const phone = matchMedia("(max-width: 640px)");
+  const panels = [$("layers"), $("latest")];
+  const set = (panel, open) => {
+    const b = panel.querySelector(".collapse");
+    const name = panel.getAttribute("aria-label").toLowerCase();
+    b.setAttribute("aria-expanded", String(open));
+    b.setAttribute("aria-label", `${open ? "Collapse" : "Expand"} ${name}`);
+    panel.classList.toggle("folded", !open);
+  };
+  for (const panel of panels) {
+    panel.querySelector(".panel-head").addEventListener("click", (e) => {
+      // A phone takes a tap anywhere on the head; elsewhere only the chevron.
+      if (!e.target.closest(phone.matches ? ".panel-head" : ".collapse") || e.target.closest("button:not(.collapse)")) return;
+      const open = panel.classList.contains("folded");
+      set(panel, open);
+      if (open && phone.matches) for (const other of panels) if (other !== panel) set(other, false);
+    });
+  }
+  // A tap on the globe puts an open panel away.
+  $("map").addEventListener("pointerdown", () => { if (phone.matches) panels.forEach((p) => set(p, false)); });
+  const fit = () => panels.forEach((p) => set(p, !phone.matches));
+  phone.addEventListener("change", fit);
+  fit();
 }
 
 export function setLayerCount(id, text) {

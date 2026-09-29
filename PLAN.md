@@ -82,7 +82,8 @@ What the first build delivers, settled in one round of questions.
 - **Units:** metric, 24-hour, the box's local time.
 - **Remote:** as in "TV app" below. **Screensaver:** slow spin, and every
   ~60 s it flies to a recent event and shows its card for 15–20 s.
-- **Phones:** later.
+- **Phones:** a basic fit only (under 640 px the Layers and Latest panels
+  fold to their heads and open one at a time). A proper phone design later.
 - **Repo:** `superthom196/gaia`, **public**, as are its ghcr package and the
   TV APK on each release (Nexiom downloads them without logging in).
 - **Testing:** deploy straight to **nexiom0** (Ryzen 3 2200GE, Vega iGPU,

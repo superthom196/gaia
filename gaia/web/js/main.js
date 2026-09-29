@@ -9,7 +9,7 @@ import { createCard } from "./card.js";
 import { createSpin, setupTv } from "./tv.js";
 import { visible } from "./events.js";
 import { KINDS } from "./kinds.js";
-import { renderIce, renderLatest, renderLayers, renderStatus, setLayerCount, wireStatus } from "./panels.js";
+import { renderIce, renderLatest, renderLayers, renderStatus, setLayerCount, wirePanels, wireStatus } from "./panels.js";
 import { time } from "./format.js";
 
 const params = new URLSearchParams(location.search);
@@ -173,6 +173,7 @@ async function loadClouds() {
 const tick = () => { document.getElementById("clock").textContent = time(Date.now()); };
 tick();
 setInterval(tick, 15e3);
+wirePanels();
 wireStatus();
 
 await globe.ready;
