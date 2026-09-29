@@ -133,7 +133,7 @@ One container:
   fails, the last good snapshot stays up with its age shown.
 - **Frontend:** static files served by the same app. The browser only calls
   Gaia's `/api/*`, plus NASA GIBS for satellite image tiles.
-- **Image:** `python:3.13-slim`, multi-arch (amd64 and arm64), built by GitHub
+- **Image:** `python:3.13-slim`, amd64 only (Nexiom is x86), built by GitHub
   Actions on each `vX.Y.Z` tag. Copy CRATE's `.github/workflows/image.yml`.
   Nexiom's "Debian packages only" rule is for the box itself. Inside Gaia's
   image, pip is fine.
