@@ -190,10 +190,10 @@ setInterval(() => ["temp", "rain"].forEach((id) => state.layers[id] && applyLaye
 document.getElementById("zoom-in").onclick = () => map.easeTo({ zoom: map.getZoom() + 0.8 });
 document.getElementById("zoom-out").onclick = () => map.easeTo({ zoom: map.getZoom() - 0.8 });
 const spinBtn = document.getElementById("spin");
-spinBtn.onclick = () => {
-  spin.on = !spin.on;
-  spinBtn.setAttribute("aria-pressed", String(spin.on));
-};
+// The button shows whether the globe is turning, so after a drag one press
+// sets it going again.
+spinBtn.onclick = () => { spin.on = !spin.spinning; };
+spin.onChange = (spinning) => spinBtn.setAttribute("aria-pressed", String(spinning));
 
 if (TV) setupTv({ globe, card, spin, list: () => shown, ambient: AMBIENT });
 // A renderer with no TV watching stops animating, so the box sits idle.

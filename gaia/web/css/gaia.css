@@ -89,8 +89,9 @@ button { cursor: pointer; }
 .icon-btn svg { fill: none; stroke: var(--text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn.big { width: 40px; height: 40px; background: var(--panel); border-color: var(--line); border-radius: 8px; }
 .icon-btn[aria-pressed="true"] { border-color: var(--line-strong); }
+#spin[aria-pressed="false"] svg { stroke: var(--muted); }
 
-#layers { position: fixed; left: var(--gap); top: 56px; width: 248px; max-height: calc(100vh - 110px); overflow: auto; }
+#layers { position: fixed; left: var(--gap); top: 56px; width: 248px; max-height: calc(100vh - 164px); overflow: auto; }
 .collapse svg { transition: transform 0.2s; }
 .collapse[aria-expanded="false"] svg { transform: rotate(-90deg); }
 .panel.folded > :not(.panel-head) { display: none; }
@@ -188,7 +189,8 @@ button { cursor: pointer; }
 .card .spark rect { fill: var(--storm); }
 
 /* ---- controls and footer ---- */
-.controls { position: fixed; left: calc(var(--gap) + 248px + 12px); bottom: 52px; display: flex; flex-direction: column; gap: 6px; }
+/* A row under the layers panel, lined up with its left edge. */
+.controls { position: fixed; left: var(--gap); bottom: 52px; display: flex; gap: 6px; }
 .footer {
   position: fixed; left: var(--gap); right: var(--gap); bottom: 10px;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -213,7 +215,7 @@ button { cursor: pointer; }
   #latest.folded #latest-count { display: none; }
   .panel-head { cursor: pointer; }
   #layers:not(.folded), #latest:not(.folded) { left: var(--gap); right: var(--gap); width: auto; z-index: 4; }
-  .controls { left: auto; right: var(--gap); }
+  .controls { left: auto; right: var(--gap); flex-direction: column; }
 }
 
 /* ---- TV: the same page, read from the sofa and driven by a remote ---- */

@@ -24,15 +24,20 @@ export function createSpin(globe, { degreesPerSecond = 3 } = {}) {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
+  const changed = () => spin.onChange?.(spin.spinning);
   const spin = {
     paused: false, // a renderer nobody watches
+    onChange: null,
     get on() { return on; },
-    set on(v) { on = v; held = false; },
+    set on(v) { on = v; held = false; clearTimeout(resumeTimer); changed(); },
+    /** Turning now: on, and not held by someone using the globe. */
+    get spinning() { return on && !held; },
     /** Pause while someone is using the globe; carry on after a quiet spell. */
     hold(ms = 20000) {
       held = true;
       clearTimeout(resumeTimer);
-      if (ms) resumeTimer = setTimeout(() => { held = false; }, ms);
+      if (ms) resumeTimer = setTimeout(() => { held = false; changed(); }, ms);
+      changed();
     },
   };
   for (const ev of ["mousedown", "wheel", "touchstart"]) {
