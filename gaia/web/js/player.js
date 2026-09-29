@@ -79,14 +79,27 @@ async function show() {
 
 let retrying = false;
 async function reconnect() {
-  if (retrying) return;
+  if (retrying || document.hidden) return;
   retrying = true;
   note.textContent = "Reconnecting…";
-  for (let wait = 1000; ; wait = Math.min(wait * 2, 15000)) {
+  for (let wait = 1000; !document.hidden; wait = Math.min(wait * 2, 15000)) {
     try { await show(); break; } catch (err) { console.warn("stream:", err.message); await new Promise((r) => setTimeout(r, wait)); }
   }
   retrying = false;
+  if (document.hidden) hangUp();
 }
+
+/** Stop watching, so the box can stop rendering once nobody is. */
+function hangUp() {
+  const c = conn;
+  conn = null;
+  if (c) close(c);
+  showing?.remove();
+  showing = null;
+}
+
+// Hidden (in the background, or the TV asleep): hang up; shown again: pick up.
+document.addEventListener("visibilitychange", () => (document.hidden ? hangUp() : reconnect()));
 
 const BACK = new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
 

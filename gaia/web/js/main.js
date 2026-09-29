@@ -182,7 +182,8 @@ for (const [id, on] of Object.entries(state.layers)) if (!(id in KINDS)) applyLa
 
 await Promise.all([loadEvents(), loadIce(), loadStatus(), loadClouds()]);
 setInterval(loadEvents, 60e3);
-setInterval(loadStatus, 60e3);
+// The footer's feed status; the TV and the box's renderer don't show it.
+if (!TV) setInterval(loadStatus, 60e3);
 setInterval(loadIce, 3600e3);
 setInterval(loadClouds, 5 * 60e3);
 setInterval(() => ["temp", "rain"].forEach((id) => state.layers[id] && applyLayer(id, true)), 3600e3);

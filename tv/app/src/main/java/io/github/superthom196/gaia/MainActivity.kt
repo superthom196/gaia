@@ -19,6 +19,7 @@ import android.webkit.WebView
  */
 class MainActivity : Activity() {
     private lateinit var web: WebView
+    private var stopped = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +49,21 @@ class MainActivity : Activity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean =
         GaiaWeb.forward(web, event) || super.dispatchKeyEvent(event)
+
+    // Off screen (Home, another app, the TV in standby) the WebView would
+    // keep watching, and the box would keep rendering for nobody. Hang up,
+    // and pick up again when Gaia is back on screen.
+    override fun onStart() {
+        super.onStart()
+        if (stopped) web.loadUrl(GaiaWeb.url(this))
+        stopped = false
+    }
+
+    override fun onStop() {
+        web.loadUrl("about:blank")
+        stopped = true
+        super.onStop()
+    }
 
     override fun onResume() {
         super.onResume()
